@@ -9,6 +9,8 @@ static NSString *const NotesBundle = @"com.apple.Notes";
 - (NSString *)id;
 - (NSString *)name;
 - (NSString *)plaintext;
+- (NSString *)body;
+- (void)setBody:(NSString *)body;
 - (NSDate *)modificationDate;
 - (BOOL)passwordProtected;
 - (void)show;
@@ -35,6 +37,42 @@ static NSString *escapeHTML(NSString *text) {
         else [html appendString:character];
     }];
     return html;
+}
+
+// Bodies larger than this hold inline images; never treat them as plain.
+static const NSUInteger PlainBodyLimit = 200000;
+
+static BOOL isPlainBody(NSString *html) {
+    if (html.length > PlainBodyLimit) return NO;
+    static NSRegularExpression *tags;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ tags = [NSRegularExpression regularExpressionWithPattern:@"<\\s*/?\\s*([A-Za-z0-9]+)" options:0 error:nil]; });
+    NSSet *allowed = [NSSet setWithArray:@[@"div", @"br", @"h1"]];
+    __block BOOL plain = YES;
+    [tags enumerateMatchesInString:html options:0 range:NSMakeRange(0, html.length)
+                        usingBlock:^(NSTextCheckingResult *match, NSMatchingFlags flags, BOOL *stop) {
+        if (![allowed containsObject:[html substringWithRange:[match rangeAtIndex:1]].lowercaseString]) { plain = NO; *stop = YES; }
+    }];
+    if (!plain) return NO;
+    // Only the first line may be a heading; htmlForText restores just that one.
+    NSUInteger headings = [html componentsSeparatedByString:@"<h1>"].count - 1;
+    return headings == 0 || (headings == 1 && [html hasPrefix:@"<div><h1>"]);
+}
+
+static NSString *htmlForText(NSString *text, BOOL heading) {
+    NSMutableString *html = [NSMutableString string];
+    __block BOOL first = YES;
+    [text enumerateLinesUsingBlock:^(NSString *line, BOOL *stop) {
+        if (!line.length) [html appendString:@"<div><br></div>"];
+        else if (first && heading) [html appendFormat:@"<div><h1>%@</h1></div>", escapeHTML(line)];
+        else [html appendFormat:@"<div>%@</div>", escapeHTML(line)];
+        first = NO;
+    }];
+    return html.length ? html : @"<div><br></div>";
+}
+
+static NSString *normalized(NSString *text) {
+    return [text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
 }
 
 @implementation NotesReader
@@ -87,7 +125,8 @@ static NSString *escapeHTML(NSString *text) {
         if (!name) return nil;
         BOOL locked = note.passwordProtected;
         NSString *text = locked ? @"" : (note.plaintext ?: @"");
-        return @{@"name": name, @"text": text, @"locked": @(locked)};
+        BOOL editable = !locked && isPlainBody(note.body ?: @"<img>");
+        return @{@"name": name, @"text": text, @"locked": @(locked), @"editable": @(editable)};
     } @catch (NSException *exception) { return nil; }
 }
 
@@ -96,12 +135,8 @@ static NSString *escapeHTML(NSString *text) {
         SBApplication<NotesApplication> *app = [self app];
         SBObject<NotesFolder> *folder = app.defaultAccount.defaultFolder;
         if (!folder) return nil;
-        NSMutableArray *lines = [NSMutableArray array];
-        for (NSString *line in [text componentsSeparatedByCharactersInSet:NSCharacterSet.newlineCharacterSet]) {
-            [lines addObject:[NSString stringWithFormat:@"<div>%@</div>", line.length ? escapeHTML(line) : @"<br>"]];
-        }
         Class noteClass = [app classForScriptingClass:@"note"];
-        SBObject<NotesNote> *note = [[noteClass alloc] initWithProperties:@{@"body": [lines componentsJoinedByString:@""]}];
+        SBObject<NotesNote> *note = [[noteClass alloc] initWithProperties:@{@"body": htmlForText(text, NO)}];
         [folder.notes addObject:note];
         NSError *error = note.lastError ?: app.lastError;
         if (error) {
@@ -109,6 +144,32 @@ static NSString *escapeHTML(NSString *text) {
             return nil;
         }
         return note.id;
+    } @catch (NSException *exception) {
+        if (message) *message = exception.reason;
+        return nil;
+    }
+}
+
++ (NSString *)updateNote:(NSString *)identifier expected:(NSString *)expected text:(NSString *)text
+                conflict:(BOOL *)conflict error:(NSString **)message {
+    if (conflict) *conflict = NO;
+    @try {
+        SBApplication<NotesApplication> *app = [self app];
+        SBObject<NotesNote> *note = [app.notes objectWithID:identifier];
+        NSString *body = note.body;
+        if (!body) return nil;
+        if (note.passwordProtected || !isPlainBody(body) || ![normalized(note.plaintext ?: @"") isEqual:normalized(expected)]) {
+            if (conflict) *conflict = YES;
+            return nil;
+        }
+        BOOL heading = [body rangeOfString:@"<h1>" options:NSCaseInsensitiveSearch].location != NSNotFound;
+        note.body = htmlForText(text, heading);
+        NSError *error = note.lastError ?: app.lastError;
+        if (error) {
+            if (message) *message = error.localizedDescription;
+            return nil;
+        }
+        return note.plaintext ?: text;
     } @catch (NSException *exception) {
         if (message) *message = exception.reason;
         return nil;
