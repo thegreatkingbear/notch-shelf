@@ -22,7 +22,7 @@ final class ShelfModel: ObservableObject {
     private let filter = MenuBarFilter()
     private var requestedAllowed: Set<String>?
     private var requestedHidden = Set<String>()
-    private var suspendedForClock = false
+    private(set) var suspendedForClock = false
     private var nextClockCheck: TimeInterval = 0
     private var temporaryReveal: String?
     private var runningObservation: NSKeyValueObservation?
@@ -143,8 +143,7 @@ final class ShelfModel: ObservableObject {
     }
 
     static var permissionPaneName: String {
-        if #available(macOS 27, *) { return String(localized: "Device Control and Data Access") }
-        return String(localized: "Accessibility")
+        String(localized: "Device Control and Data Access")
     }
 
     func refresh(force: Bool = false) {

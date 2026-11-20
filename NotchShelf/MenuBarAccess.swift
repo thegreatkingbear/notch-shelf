@@ -133,21 +133,19 @@ enum MenuBarAccess {
     // the underlying owners directly; a system hit test would hit our overlay.
     static func menuBarLayout(in band: CGRect, barOrigin: CGPoint, menuOwnerPID: pid_t?) -> MenuBarLayout {
         guard AXIsProcessTrusted() else { return .unavailable }
-        if #available(macOS 27, *) {
-            // While a full-screen menu bar is hidden (or sliding between Spaces),
-            // its old AX geometry can still be returned. Only measure a bar
-            // that WindowServer is actually displaying at this screen's origin.
-            let level = Int(CGWindowLevelForKey(.mainMenuWindow))
-            guard let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] else { return .unavailable }
-            let visible = windows.contains { row in
-                guard row[kCGWindowLayer as String] as? Int == level,
-                      let raw = row[kCGWindowBounds as String] as? NSDictionary,
-                      let rect = CGRect(dictionaryRepresentation: raw) else { return false }
-                return abs(rect.minX - barOrigin.x) < 1 && abs(rect.minY - barOrigin.y) < 1
-                    && rect.height <= 64 && rect.contains(CGPoint(x: band.midX, y: band.midY))
-            }
-            guard visible else { return .hidden }
+        // While a full-screen menu bar is hidden (or sliding between Spaces),
+        // its old AX geometry can still be returned. Only measure a bar
+        // that WindowServer is actually displaying at this screen's origin.
+        let level = Int(CGWindowLevelForKey(.mainMenuWindow))
+        guard let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] else { return .unavailable }
+        let visible = windows.contains { row in
+            guard row[kCGWindowLayer as String] as? Int == level,
+                  let raw = row[kCGWindowBounds as String] as? NSDictionary,
+                  let rect = CGRect(dictionaryRepresentation: raw) else { return false }
+            return abs(rect.minX - barOrigin.x) < 1 && abs(rect.minY - barOrigin.y) < 1
+                && rect.height <= 64 && rect.contains(CGPoint(x: band.midX, y: band.midY))
         }
+        guard visible else { return .hidden }
         guard let bar = menuBar(at: CGPoint(x: barOrigin.x + 20, y: band.midY), fallbackPID: menuOwnerPID),
               let barFrame = frame(of: bar),
               let menus = value(bar, kAXChildrenAttribute) as? [AXUIElement] else { return .unavailable }
@@ -155,30 +153,20 @@ enum MenuBarAccess {
             $0.offsetBy(dx: barOrigin.x - barFrame.minX, dy: barOrigin.y - barFrame.minY)
         }
 
-        if #available(macOS 27, *) {
-            guard let agent = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.MenuBarAgent").first else { return .unavailable }
-            let host = AXUIElementCreateApplication(agent.processIdentifier)
-            AXUIElementSetMessagingTimeout(host, 0.15)
-            guard let windows = value(host, kAXWindowsAttribute) as? [AXUIElement] else { return .unavailable }
-            var foundBar = false
-            for window in windows {
-                guard let bar = frame(of: window), bar.height <= 64,
-                      bar.intersects(band) else { continue }
-                guard let entries = value(window, kAXChildrenAttribute) as? [AXUIElement] else { continue }
-                foundBar = true
-                occupied.append(contentsOf: entries.compactMap(frame(of:)))
-            }
-            guard foundBar else { return .unavailable }
-        } else {
-            guard let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] else { return .unavailable }
-            let statusLevel = Int(CGWindowLevelForKey(.statusWindow))
-            for window in windows where window[kCGWindowLayer as String] as? Int == statusLevel {
-                guard window[kCGWindowOwnerPID as String] as? pid_t != getpid(),
-                      let bounds = window[kCGWindowBounds as String] as? NSDictionary,
-                      let rect = CGRect(dictionaryRepresentation: bounds) else { continue }
-                occupied.append(rect)
-            }
+        // MenuBarAgent hosts every status item in its own bar windows.
+        guard let agent = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.MenuBarAgent").first else { return .unavailable }
+        let host = AXUIElementCreateApplication(agent.processIdentifier)
+        AXUIElementSetMessagingTimeout(host, 0.15)
+        guard let hostWindows = value(host, kAXWindowsAttribute) as? [AXUIElement] else { return .unavailable }
+        var foundBar = false
+        for window in hostWindows {
+            guard let bar = frame(of: window), bar.height <= 64,
+                  bar.intersects(band) else { continue }
+            guard let entries = value(window, kAXChildrenAttribute) as? [AXUIElement] else { continue }
+            foundBar = true
+            occupied.append(contentsOf: entries.compactMap(frame(of:)))
         }
+        guard foundBar else { return .unavailable }
         return .visible(occupied.filter { $0.insetBy(dx: -1, dy: 0).intersects(band) })
     }
 
@@ -212,8 +200,7 @@ enum MenuBarAccess {
             add(rect)
         }
 
-        if #available(macOS 27, *),
-           let agent = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.MenuBarAgent").first {
+        if let agent = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.MenuBarAgent").first {
             let host = AXUIElementCreateApplication(agent.processIdentifier)
             AXUIElementSetMessagingTimeout(host, 0.15)
             for window in value(host, kAXWindowsAttribute) as? [AXUIElement] ?? [] {
@@ -228,14 +215,6 @@ enum MenuBarAccess {
                           }) else { continue }
                     add(rect)
                 }
-            }
-        } else {
-            // Older systems expose status items as individual WindowServer windows.
-            let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] ?? []
-            for row in windows where row[kCGWindowOwnerPID as String] as? Int32 == pid &&
-                row[kCGWindowLayer as String] as? Int == Int(CGWindowLevelForKey(.statusWindow)) {
-                if let raw = row[kCGWindowBounds as String] as? NSDictionary,
-                   let rect = CGRect(dictionaryRepresentation: raw), rect.height <= 64 { add(rect) }
             }
         }
 

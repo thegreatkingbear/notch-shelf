@@ -56,6 +56,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var springRoom: CGFloat = 0
     private var wings: NotchWings?
     private var timer: Timer?
+    private var mouseMonitors: [Any] = []
+    private var menuBarBands: [NSRect] = []
     private var enteredAt: TimeInterval?
     private var closeAfter: TimeInterval?
     private var lastPermissionCheck: TimeInterval = 0
@@ -89,17 +91,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.start()
         configureScreen()
         model.onChoose = { [weak self] item in self?.choose(item) }
-        let timer = Timer(timeInterval: 0.08, repeats: true) { [weak self] _ in self?.tick() }
-        timer.tolerance = 0.02
-        RunLoop.main.add(timer, forMode: .common)
-        self.timer = timer
+        // Poll quickly only while the pointer is near a menu bar or the shelf is
+        // busy. Elsewhere, a slow tick keeps widgets current and pointer
+        // movement toward the top of a screen switches back to fast polling.
+        let wake: (NSEvent) -> Void = { [weak self] _ in
+            guard let self, self.timer?.timeInterval != Self.activeInterval,
+                  self.isNearMenuBar(NSEvent.mouseLocation) else { return }
+            self.tick()
+        }
+        let moves: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged]
+        mouseMonitors = [NSEvent.addGlobalMonitorForEvents(matching: moves, handler: wake),
+                         NSEvent.addLocalMonitorForEvents(matching: moves) { wake($0); return $0 }].compactMap { $0 }
+        schedule(Self.idleInterval)
         if !UserDefaults.standard.bool(forKey: "didIntroduce") {
             show(initial: true)
             UserDefaults.standard.set(true, forKey: "didIntroduce")
         }
     }
 
-    func applicationWillTerminate(_ notification: Notification) { model.stop() }
+    func applicationWillTerminate(_ notification: Notification) {
+        mouseMonitors.forEach(NSEvent.removeMonitor)
+        model.stop()
+    }
+
+    private static let activeInterval: TimeInterval = 0.08
+    private static let idleInterval: TimeInterval = 1
+
+    private func schedule(_ interval: TimeInterval) {
+        guard timer?.timeInterval != interval else { return }
+        timer?.invalidate()
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in self?.tick() }
+        timer.tolerance = interval / 4
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+    }
+
+    /// The strip along the top of each screen where the notch, wings and the
+    /// clock respond to the pointer.
+    private func isNearMenuBar(_ point: NSPoint) -> Bool {
+        menuBarBands.contains { $0.contains(point) }
+    }
+
+    private func updateMenuBarBands() {
+        menuBarBands = NSScreen.screens.map { screen in
+            let height = max(48, screen.safeAreaInsets.top + 16)
+            // Include the top edge itself, where the pointer rests against the bezel.
+            return NSRect(x: screen.frame.minX, y: screen.frame.maxY - height, width: screen.frame.width, height: height + 1)
+        }
+    }
 
     func applicationDidChangeScreenParameters(_ notification: Notification) { configureScreen() }
 
@@ -117,6 +156,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func menuLayoutChanged() { wings?.invalidateLayout() }
 
     private func configureScreen() {
+        updateMenuBarBands()
         let updated = Anchor()
         if anchor == updated, panel != nil {
             wings?.invalidateLayout()
@@ -169,8 +209,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func tick() {
-        guard let anchor, panel != nil else { return }
         let point = NSEvent.mouseLocation
+        defer {
+            let active = model.expanded || selecting || menuTracking || enteredAt != nil || closeAfter != nil
+                || model.suspendedForClock || isNearMenuBar(point)
+            schedule(active ? Self.activeInterval : Self.idleInterval)
+        }
+        guard let anchor, panel != nil else { return }
         let overNotch = anchor.trigger.insetBy(dx: -1, dy: -1).contains(point)
         let time = now
         model.accommodateClock(at: point, time: time)

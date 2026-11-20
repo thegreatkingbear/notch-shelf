@@ -32,13 +32,13 @@
 
 ## 호환성
 
-앱별 숨김은 macOS 27의 비공개 MenuBarClientCore 인터페이스를 사용합니다. 지원하지 않는 시스템에서는 메뉴 막대 항목을 여는 기본 패널을 제공합니다. macOS 업데이트로 인터페이스가 달라질 수 있습니다. 숨김 적용에 실패하면 필터를 해제합니다.
+앱별 숨김은 macOS 27의 비공개 MenuBarClientCore 인터페이스를 사용합니다. 이후 macOS에서 이 인터페이스를 찾지 못하면 메뉴 막대 항목을 여는 기본 패널을 제공합니다. macOS 업데이트로 인터페이스가 달라질 수 있습니다. 숨김 적용에 실패하면 필터를 해제합니다.
 
 macOS 27에서 숨김 필터는 알림 센터 열기에도 영향을 줍니다. 시계에 포인터를 올리면 필터를 잠시 풀어 시계 클릭으로 알림 센터를 열 수 있게 합니다. 이때 숨긴 앱이 잠시 보일 수 있고, 숨김 중에는 트랙패드 제스처나 단축키로 알림 센터를 여는 동작이 제한될 수 있습니다.
 
 ## 빌드
 
-SwiftUI와 AppKit으로 만든 macOS 14 이상용 앱입니다. Xcode에서 `NotchShelf.xcodeproj`를 열어 실행하거나 프로젝트 폴더에서 빌드합니다.
+SwiftUI와 AppKit으로 만든 macOS 27 이상용 앱입니다. Xcode에서 `NotchShelf.xcodeproj`를 열어 실행하거나 프로젝트 폴더에서 빌드합니다.
 
 ```sh
 xcodebuild -project NotchShelf.xcodeproj -scheme NotchShelf -configuration Release \

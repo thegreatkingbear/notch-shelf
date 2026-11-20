@@ -47,13 +47,30 @@ final class UsageMonitor: ObservableObject {
     private var busy = Set<WingWidget>()
     private var refreshAfterRead = Set<WingWidget>()
     private var next = [WingWidget: Date]()
+    private var failures = [WingWidget: Int]()
     private var settingsVisible = false
+    // Nobody can see the rings while the displays sleep or another user is
+    // active, so skip launching the CLIs until someone is back.
+    private var idle = Set<Notification.Name>()
+    private var observers = Set<AnyCancellable>()
 
     init(preferences: WingPreferences) {
         self.preferences = preferences
         changes = preferences.$layout.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in self?.refresh() }
         wake = NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)
-            .receive(on: DispatchQueue.main).sink { [weak self] _ in self?.next.removeAll(); self?.refresh() }
+            .receive(on: DispatchQueue.main).sink { [weak self] _ in
+                self?.next.removeAll()
+                self?.failures.removeAll()
+                self?.refresh()
+            }
+        let center = NSWorkspace.shared.notificationCenter
+        for (away, back) in [(NSWorkspace.screensDidSleepNotification, NSWorkspace.screensDidWakeNotification),
+                             (NSWorkspace.sessionDidResignActiveNotification, NSWorkspace.sessionDidBecomeActiveNotification)] {
+            center.publisher(for: away).receive(on: DispatchQueue.main)
+                .sink { [weak self] _ in self?.idle.insert(away) }.store(in: &observers)
+            center.publisher(for: back).receive(on: DispatchQueue.main)
+                .sink { [weak self] _ in self?.idle.remove(away); self?.refresh() }.store(in: &observers)
+        }
         let tick = Timer(timeInterval: 30, repeats: true) { [weak self] _ in
             guard let self else { return }
             if !self.samples.isEmpty { self.objectWillChange.send() }
@@ -71,7 +88,10 @@ final class UsageMonitor: ObservableObject {
 
     func settings(_ visible: Bool) {
         settingsVisible = visible
-        if visible { refresh() }
+        guard visible else { return }
+        // Opening Settings retries a backed-off service, e.g. after installing its CLI.
+        for widget in failures.keys where failures[widget, default: 0] > 0 { next.removeValue(forKey: widget) }
+        refresh()
     }
 
     func sample(_ widget: WingWidget) -> UsageSample? {
@@ -151,7 +171,7 @@ final class UsageMonitor: ObservableObject {
 
     func refresh(force: Bool = false) {
         let assigned = preferences.layout.left + preferences.layout.right
-        guard settingsVisible || force || Self.services.contains(where: assigned.contains) else { return }
+        guard force || (idle.isEmpty && (settingsVisible || Self.services.contains(where: assigned.contains))) else { return }
         for widget in Self.services {
             read(widget, force: force)
         }
@@ -164,12 +184,18 @@ final class UsageMonitor: ObservableObject {
         }
         guard force || Date() >= next[widget, default: .distantPast] else { return }
         busy.insert(widget)
-        next[widget] = Date().addingTimeInterval(widget == .codex ? 120 : 300)
+        let interval: TimeInterval = widget == .codex ? 120 : 300
+        next[widget] = Date().addingTimeInterval(interval)
         DispatchQueue.global(qos: .utility).async {
             let claude = widget == .claude ? ClaudeUsage.fetch() : nil
             let windows = claude?.0 ?? CodexUsage.read()
             DispatchQueue.main.async {
                 self.busy.remove(widget)
+                // Back off while a CLI is missing, signed out or failing: 2×, 4×, then 8× the interval.
+                let succeeded = claude.map { $0.1 == .connected } ?? !windows.isEmpty
+                let failed = succeeded ? 0 : min(self.failures[widget, default: 0] + 1, 3)
+                self.failures[widget] = failed
+                self.next[widget] = Date().addingTimeInterval(interval * Double(1 << failed))
                 if let claude {
                     self.claudeConnection = claude.1
                     if claude.1 == .needsLogin && self.settingsVisible {

@@ -2,7 +2,7 @@
 #import <dlfcn.h>
 
 // macOS 27's menu bar host accepts a process-scoped allow list. Resolve this
-// interface at runtime so an OS without it can still run the shelf.
+// private interface at runtime so a later macOS that changes it still runs the shelf.
 @protocol MenuBarConfiguration
 - (instancetype)initWithAllowedSystemItems:(NSArray<NSNumber *> *)items
                   allowedBundleIdentifiers:(NSArray<NSString *> *)identifiers;
@@ -22,13 +22,11 @@
     static BOOL available;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        if (@available(macOS 27, *)) {
-            void *library = dlopen("/System/Library/PrivateFrameworks/MenuBarClientCore.framework/MenuBarClientCore", RTLD_LAZY | RTLD_LOCAL);
-            available = library &&
-                [NSClassFromString(@"MBAssessmentModeConfiguration") instancesRespondToSelector:@selector(initWithAllowedSystemItems:allowedBundleIdentifiers:)] &&
-                [NSClassFromString(@"MBAssessmentModeAssertion") instancesRespondToSelector:@selector(activateWithConfiguration:completionHandler:)] &&
-                [NSClassFromString(@"MBAssessmentModeAssertion") instancesRespondToSelector:@selector(invalidate)];
-        }
+        void *library = dlopen("/System/Library/PrivateFrameworks/MenuBarClientCore.framework/MenuBarClientCore", RTLD_LAZY | RTLD_LOCAL);
+        available = library &&
+            [NSClassFromString(@"MBAssessmentModeConfiguration") instancesRespondToSelector:@selector(initWithAllowedSystemItems:allowedBundleIdentifiers:)] &&
+            [NSClassFromString(@"MBAssessmentModeAssertion") instancesRespondToSelector:@selector(activateWithConfiguration:completionHandler:)] &&
+            [NSClassFromString(@"MBAssessmentModeAssertion") instancesRespondToSelector:@selector(invalidate)];
     });
     return available;
 }

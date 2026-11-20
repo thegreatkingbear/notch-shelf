@@ -255,7 +255,7 @@
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Read your calendar to show events for the selected day in the notch.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "View, add and complete reminders in the notch.";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = local.notchshelf.mac;
 				PRODUCT_NAME = NotchShelf;
@@ -284,7 +284,7 @@
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Read your calendar to show events for the selected day in the notch.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "View, add and complete reminders in the notch.";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = local.notchshelf.mac;
 				PRODUCT_NAME = NotchShelf;
