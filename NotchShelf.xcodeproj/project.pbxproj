@@ -55,6 +55,8 @@
 		FD3A11FCB9ABA5AB2BC95A24 /* WingPreferences.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WingPreferences.swift; sourceTree = "<group>"; };
 		FEACA9E36E6685E577CE1840 /* NotchWings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotchWings.swift; sourceTree = "<group>"; };
 		A1C0FFEE00000000000000A1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1C0FFEE00000000000000C1 /* NotchShelf.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotchShelf.entitlements; sourceTree = "<group>"; };
+		A1C0FFEE00000000000000C2 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +100,7 @@
 				FD3A11FCB9ABA5AB2BC95A24 /* WingPreferences.swift */,
 				DD9BB1DC437742E385ED282E /* UsageMonitor.swift */,
 				A1C0FFEE00000000000000A1 /* Assets.xcassets */,
+				A1C0FFEE00000000000000C1 /* NotchShelf.entitlements */,
 				CC41B9BB6E5E97BB6DF5E6B2 /* Resources */,
 			);
 			name = NotchShelf;
@@ -138,7 +141,16 @@
 				87B7104ADD68F0D3C50268B1 /* Products */,
 				C5DD6613EFEF5CE11540753F /* Frameworks */,
 				60F1ED915B23CA7F860807DA /* NotchShelf */,
+				A1C0FFEE00000000000000C3 /* Config */,
 			);
+			sourceTree = "<group>";
+		};
+		A1C0FFEE00000000000000C3 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A1C0FFEE00000000000000C2 /* Signing.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -238,26 +250,29 @@
 /* Begin XCBuildConfiguration section */
 		13F9C518E87C42383AD39472 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1C0FFEE00000000000000C2 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = NotchShelf/NotchShelf.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 7UJ5666A7P;
 				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Notch Shelf";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 chopnchop.dev. MIT License.";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Show the current track, artwork and playback time in the notch and control playback.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Read your calendar to show events for the selected day in the notch.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "View, add and complete reminders in the notch.";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 27.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = local.notchshelf.mac;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.chopnchop.notchshelf;
 				PRODUCT_NAME = NotchShelf;
 				SDKROOT = macosx;
 				SWIFT_OBJC_BRIDGING_HEADER = NotchShelf/MenuBarFilter.h;
@@ -267,26 +282,29 @@
 		};
 		2FA562C34DF6A27984FB1055 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1C0FFEE00000000000000C2 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = NotchShelf/NotchShelf.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 7UJ5666A7P;
 				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Notch Shelf";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 chopnchop.dev. MIT License.";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Show the current track, artwork and playback time in the notch and control playback.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Read your calendar to show events for the selected day in the notch.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "View, add and complete reminders in the notch.";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 27.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = local.notchshelf.mac;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.chopnchop.notchshelf;
 				PRODUCT_NAME = NotchShelf;
 				SDKROOT = macosx;
 				SWIFT_OBJC_BRIDGING_HEADER = NotchShelf/MenuBarFilter.h;

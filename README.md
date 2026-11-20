@@ -46,6 +46,25 @@ xcodebuild -project NotchShelf.xcodeproj -scheme NotchShelf -configuration Relea
 open build/NotchShelf.app
 ```
 
-Debug와 Release 모두 같은 개인 팀의 **Apple Development** 인증서와 번들 ID `local.notchshelf.mac`으로 서명합니다. 처음에는 Xcode의 **Settings → Apple Accounts**에서 로그인하세요. 다른 개발자가 빌드할 때는 **Signing & Capabilities → Team**에서 본인의 팀을 선택합니다. 명령줄에서 Xcode가 개발 인증서를 발급해야 할 때는 위 빌드 명령에 `-allowProvisioningUpdates`를 추가합니다.
+Debug와 Release 모두 **Apple Development** 인증서와 번들 ID `dev.chopnchop.notchshelf`로 서명하며, Hardened Runtime을 켭니다. 처음에는 Xcode의 **Settings → Apple Accounts**에서 로그인하고, 본인의 팀 ID를 `Config/Signing.local.xcconfig`에 적습니다. 이 파일은 git에 올라가지 않습니다.
 
-기존 임시 서명 버전에서 처음 전환할 때는 실행 중인 앱을 종료하고 새 앱을 연 뒤 손쉬운 사용 권한을 한 번 허용합니다. 이전 권한이 켜져 있어도 새 앱이 인식하지 못하면 `tccutil reset Accessibility local.notchshelf.mac`으로 이 앱의 기존 권한만 초기화하고, 권한 목록의 **+**로 `build/NotchShelf.app`을 추가합니다. 이후 같은 서명 요건으로 빌드한 업데이트에는 기존 허용이 적용됩니다.
+```
+DEVELOPMENT_TEAM = ABCDE12345
+```
+
+명령줄에서 Xcode가 개발 인증서를 발급해야 할 때는 위 빌드 명령에 `-allowProvisioningUpdates`를 추가합니다.
+
+### 배포용 DMG
+
+`scripts/release.sh`는 앱을 빌드하고 서명을 확인한 뒤 `dist/`에 DMG를 만듭니다. 인자 없이 실행하면 개발 인증서로 서명한 테스트용 DMG를 만들며, 공증하지 않으므로 다른 Mac에서는 열리지 않습니다. 배포용은 유료 Apple Developer Program의 **Developer ID Application** 인증서로 서명하고 공증합니다.
+
+```sh
+xcrun notarytool store-credentials notchshelf --apple-id you@example.com --team-id ABCDE12345
+TEAM_ID=ABCDE12345 NOTARY_PROFILE=notchshelf scripts/release.sh
+```
+
+기존 임시 서명 버전에서 처음 전환할 때는 실행 중인 앱을 종료하고 새 앱을 연 뒤 손쉬운 사용 권한을 한 번 허용합니다. 이전 권한이 켜져 있어도 새 앱이 인식하지 못하면 `tccutil reset Accessibility dev.chopnchop.notchshelf`으로 이 앱의 기존 권한만 초기화하고, 권한 목록의 **+**로 `build/NotchShelf.app`을 추가합니다. 이후 같은 서명 요건으로 빌드한 업데이트에는 기존 허용이 적용됩니다.
+
+## 라이선스
+
+[MIT License](LICENSE) © 2026 chopnchop.dev

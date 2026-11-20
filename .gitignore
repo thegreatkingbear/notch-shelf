@@ -2,3 +2,5 @@ build/
 DerivedData/
 xcuserdata/
 .DS_Store
+Config/Signing.local.xcconfig
+dist/

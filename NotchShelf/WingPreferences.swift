@@ -1,3 +1,4 @@
+import ServiceManagement
 import SwiftUI
 
 enum WingWidget: Codable, Identifiable, Hashable {
@@ -76,12 +77,35 @@ final class WingPreferences: ObservableObject {
     }
 }
 
+/// Registers the app itself to open at login. The user can also change this
+/// in System Settings, so the status is read again whenever Settings is shown.
+final class LoginItem: ObservableObject {
+    @Published private(set) var status = SMAppService.mainApp.status
+
+    var enabled: Bool { status == .enabled || status == .requiresApproval }
+
+    func set(_ on: Bool) {
+        do {
+            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+        } catch {
+            // The status read below shows whether the change took effect.
+        }
+        reload()
+    }
+
+    func reload() {
+        let current = SMAppService.mainApp.status
+        if current != status { status = current }
+    }
+}
+
 struct WingSettings: View {
     @ObservedObject var preferences: WingPreferences
     @ObservedObject var model: ShelfModel
     @ObservedObject var usage: UsageMonitor
     let openPermissions: () -> Void
     @State private var dropColumn: WingColumn?
+    @StateObject private var login = LoginItem()
 
     private var library: [WingWidget] {
         let eligible = Set(model.apps.map(\.id))
@@ -93,7 +117,19 @@ struct WingSettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Collapsed Notch").font(.title2.bold())
+            HStack(alignment: .firstTextBaseline) {
+                Text("Collapsed Notch").font(.title2.bold())
+                Spacer()
+                Toggle("Open at Login", isOn: Binding(get: { login.enabled }, set: login.set))
+                    .toggleStyle(.switch).controlSize(.small)
+            }
+            if login.status == .requiresApproval {
+                HStack {
+                    Text("Allow Notch Shelf in System Settings → General → Login Items.")
+                        .font(.callout).foregroundStyle(.secondary)
+                    Button("Open Login Items…") { SMAppService.openSystemSettingsLoginItems() }.controlSize(.small)
+                }
+            }
             Text("Drag items from the center to either side. Items on the same side appear in order, switching every \(WingPreferences.rotationSeconds) seconds.")
                 .font(.callout).foregroundStyle(.secondary)
             HStack(alignment: .top, spacing: 12) {
@@ -114,6 +150,7 @@ struct WingSettings: View {
         }
         .padding(20)
         .frame(minWidth: 650, minHeight: 360)
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in login.reload() }
     }
 
     @ViewBuilder private var usageButtons: some View {
