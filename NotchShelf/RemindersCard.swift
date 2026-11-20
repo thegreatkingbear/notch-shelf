@@ -92,8 +92,12 @@ final class ReminderList: ObservableObject {
     }
 }
 
-private struct ReminderTitleField: NSViewRepresentable {
-    @ObservedObject var model: ReminderList
+/// A single-line field that can make the nonactivating panel key. Return submits;
+/// the field keeps focus when `submit` returns false, otherwise the panel resigns key.
+struct CardTextField: NSViewRepresentable {
+    let placeholder: String
+    @Binding var text: String
+    let submit: () -> Bool
 
     final class Field: NSTextField {
         override var needsPanelToBecomeKey: Bool { true }
@@ -101,17 +105,16 @@ private struct ReminderTitleField: NSViewRepresentable {
     }
 
     final class Coordinator: NSObject, NSTextFieldDelegate {
-        let model: ReminderList
-        init(_ model: ReminderList) { self.model = model }
+        var parent: CardTextField
+        init(_ parent: CardTextField) { self.parent = parent }
 
         @MainActor func controlTextDidChange(_ notification: Notification) {
-            if let field = notification.object as? NSTextField { model.draft = field.stringValue }
+            if let field = notification.object as? NSTextField { parent.text = field.stringValue }
         }
 
         @MainActor func control(_ control: NSControl, textView: NSTextView, doCommandBy command: Selector) -> Bool {
             if command == #selector(NSResponder.insertNewline(_:)) {
-                model.add()
-                if !model.draft.isEmpty { return true }
+                if !parent.submit() { return true }
             } else if command != #selector(NSResponder.cancelOperation(_:)) { return false }
             control.window?.makeFirstResponder(nil)
             control.window?.resignKey()
@@ -119,11 +122,11 @@ private struct ReminderTitleField: NSViewRepresentable {
         }
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(model) }
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeNSView(context: Context) -> NSTextField {
         let field = Field()
-        field.placeholderString = String(localized: "New Reminder")
-        field.setAccessibilityLabel(String(localized: "New Reminder"))
+        field.placeholderString = placeholder
+        field.setAccessibilityLabel(placeholder)
         field.isBordered = false
         field.drawsBackground = false
         field.usesSingleLineMode = true
@@ -134,7 +137,8 @@ private struct ReminderTitleField: NSViewRepresentable {
     }
 
     func updateNSView(_ field: NSTextField, context: Context) {
-        if field.stringValue != model.draft { field.stringValue = model.draft }
+        context.coordinator.parent = self
+        if field.stringValue != text { field.stringValue = text }
     }
 }
 
@@ -174,7 +178,10 @@ struct RemindersCard: View {
                     }
                     Divider()
                     HStack(spacing: 6) {
-                        ReminderTitleField(model: model).frame(height: 20)
+                        CardTextField(placeholder: String(localized: "New Reminder"), text: $model.draft) {
+                            model.add()
+                            return model.draft.isEmpty
+                        }.frame(height: 20)
                         Button { model.add() } label: {
                             Image(systemName: "plus.circle.fill").font(.system(size: 16))
                         }.buttonStyle(.plain).accessibilityLabel("Add Reminder")

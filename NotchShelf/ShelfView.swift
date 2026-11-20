@@ -43,6 +43,7 @@ struct ShelfView: View {
 
     @State private var selectedCard = ShelfCard.music
     @StateObject private var reminders = ReminderList()
+    @StateObject private var notes = NoteLibrary()
 
     var body: some View {
         GeometryReader { geometry in
@@ -73,7 +74,7 @@ struct ShelfView: View {
                                 .buttonStyle(.borderedProminent)
                         }
                     } else if model.expanded {
-                        InfoDeck(playback: playback, selection: $selectedCard, reminders: reminders)
+                        InfoDeck(playback: playback, selection: $selectedCard, reminders: reminders, notes: notes)
                     } else { Spacer() }
                     if let message = model.layoutError ?? model.message {
                         Text(message).font(.caption).foregroundStyle(.yellow)

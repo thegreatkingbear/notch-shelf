@@ -6,49 +6,49 @@
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "노치에서 현재 곡의 제목, 앨범 커버와 재생 시간을 표시하고 재생을 제어합니다."
+            "value": "노치에서 현재 곡의 제목, 앨범 커버와 재생 시간을 표시하고 재생을 제어하며, 메모 앱의 메모를 읽고 추가합니다."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Show the current track, artwork and playback time in the notch and control playback."
+            "value": "Show the current track, artwork and playback time in the notch and control playback, and read and add notes in Notes."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ノッチに曲名、アートワーク、再生時間を表示し、再生を操作します。"
+            "value": "ノッチに曲名、アートワーク、再生時間を表示して再生を操作し、メモの読み取りと追加を行います。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在刘海中显示当前曲目、封面和播放时间，并控制播放。"
+            "value": "在刘海中显示当前曲目、封面和播放时间，控制播放，并读取和添加备忘录。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "在瀏海中顯示目前曲目、封面和播放時間，並控制播放。"
+            "value": "在瀏海中顯示目前曲目、封面和播放時間，控制播放，並讀取和加入備忘錄。"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Afficher le morceau, sa pochette et sa position de lecture dans l’encoche, et contrôler la lecture."
+            "value": "Afficher le morceau, sa pochette et sa position de lecture dans l’encoche, contrôler la lecture, et lire et ajouter des notes dans Notes."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Titel, Cover und Wiedergabezeit in der Notch anzeigen und die Wiedergabe steuern."
+            "value": "Titel, Cover und Wiedergabezeit in der Notch anzeigen, die Wiedergabe steuern sowie Notizen in Notizen lesen und hinzufügen."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Показывать трек, обложку и время в вырезе и управлять воспроизведением."
+            "value": "Показывать трек, обложку и время воспроизведения в вырезе, управлять воспроизведением, а также читать и добавлять заметки в Заметках."
           }
         }
       }

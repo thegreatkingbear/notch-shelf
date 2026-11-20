@@ -174,7 +174,7 @@ private struct CardSurface<Content: View>: View {
 }
 
 enum ShelfCard: Int, CaseIterable {
-    case music, calendar, reminders
+    case music, calendar, reminders, notes
 
     func neighbor(_ direction: Int) -> Self {
         let cards = Self.allCases
@@ -188,16 +188,18 @@ private final class CardStripView: NSView {
     private let music: NSHostingView<CardSurface<MusicCard>>
     private let month: NSHostingView<CardSurface<CalendarCard>>
     private let tasks: NSHostingView<CardSurface<RemindersCard>>
+    private let jottings: NSHostingView<CardSurface<NotesCard>>
     private let strip = NSView()
     private var selected: ShelfCard
     private var previous: ShelfCard?
     private var forward = true
 
-    init(playback: PlaybackMonitor, selected: ShelfCard, reminders: ReminderList) {
+    init(playback: PlaybackMonitor, selected: ShelfCard, reminders: ReminderList, notes: NoteLibrary) {
         self.selected = selected
         music = NSHostingView(rootView: CardSurface(active: selected == .music) { MusicCard(active: selected == .music, playback: playback) })
         month = NSHostingView(rootView: CardSurface(active: selected == .calendar) { CalendarCard(active: selected == .calendar) })
         tasks = NSHostingView(rootView: CardSurface(active: selected == .reminders) { RemindersCard(active: selected == .reminders, model: reminders) })
+        jottings = NSHostingView(rootView: CardSurface(active: selected == .notes) { NotesCard(active: selected == .notes, model: notes) })
         super.init(frame: .zero)
         wantsLayer = true
         layer?.masksToBounds = true
@@ -211,6 +213,7 @@ private final class CardStripView: NSView {
         music.sizingOptions = []
         month.sizingOptions = []
         tasks.sizingOptions = []
+        jottings.sizingOptions = []
     }
 
     required init?(coder: NSCoder) { nil }
@@ -220,6 +223,7 @@ private final class CardStripView: NSView {
         case .music: return music
         case .calendar: return month
         case .reminders: return tasks
+        case .notes: return jottings
         }
     }
 
@@ -235,9 +239,9 @@ private final class CardStripView: NSView {
         }
     }
 
-    func show(_ page: ShelfCard, forward: Bool, animated: Bool, playback: PlaybackMonitor, reminders: ReminderList) {
+    func show(_ page: ShelfCard, forward: Bool, animated: Bool, playback: PlaybackMonitor, reminders: ReminderList, notes: NoteLibrary) {
         guard page != selected else { return }
-        if selected == .reminders, window?.isKeyWindow == true {
+        if selected == .reminders || selected == .notes, window?.isKeyWindow == true {
             window?.makeFirstResponder(nil)
             window?.resignKey()
         }
@@ -247,6 +251,7 @@ private final class CardStripView: NSView {
         music.rootView = CardSurface(active: page == .music) { MusicCard(active: page == .music, playback: playback) }
         month.rootView = CardSurface(active: page == .calendar) { CalendarCard(active: page == .calendar) }
         tasks.rootView = CardSurface(active: page == .reminders) { RemindersCard(active: page == .reminders, model: reminders) }
+        jottings.rootView = CardSurface(active: page == .notes) { NotesCard(active: page == .notes, model: notes) }
         strip.layer?.removeAnimation(forKey: "slide")
         needsLayout = true
         layoutSubtreeIfNeeded()
@@ -269,12 +274,13 @@ private struct CardStrip: NSViewRepresentable {
     let playback: PlaybackMonitor
     let selection: ShelfCard
     let reminders: ReminderList
+    let notes: NoteLibrary
     let forward: Bool
     let animated: Bool
 
-    func makeNSView(context: Context) -> CardStripView { CardStripView(playback: playback, selected: selection, reminders: reminders) }
+    func makeNSView(context: Context) -> CardStripView { CardStripView(playback: playback, selected: selection, reminders: reminders, notes: notes) }
     func updateNSView(_ view: CardStripView, context: Context) {
-        view.show(selection, forward: forward, animated: animated, playback: playback, reminders: reminders)
+        view.show(selection, forward: forward, animated: animated, playback: playback, reminders: reminders, notes: notes)
     }
 }
 
@@ -282,6 +288,7 @@ struct InfoDeck: View {
     @ObservedObject var playback: PlaybackMonitor
     @Binding var selection: ShelfCard
     let reminders: ReminderList
+    let notes: NoteLibrary
     @State private var forward = true
     @State private var edge = 0
     @State private var slidingUntil: TimeInterval = 0
@@ -297,7 +304,7 @@ struct InfoDeck: View {
 
     var body: some View {
         GeometryReader { geo in
-            CardStrip(playback: playback, selection: selection, reminders: reminders, forward: forward, animated: !reduceMotion)
+            CardStrip(playback: playback, selection: selection, reminders: reminders, notes: notes, forward: forward, animated: !reduceMotion)
             .frame(width: geo.size.width, height: geo.size.height)
             .clipped().contentShape(Rectangle())
             .background {

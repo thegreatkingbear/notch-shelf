@@ -23,6 +23,8 @@
 		CC5DA453270C5450DBB0C6CC /* PlaybackMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76A7AC5D7F910F3573F6F1AA /* PlaybackMonitor.swift */; };
 		D29FAB8AE0C134232F2FDAEA /* CalendarCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39BAF19225C1CB83DB6E09A8 /* CalendarCard.swift */; };
 		98A01DF8C591012FB3218483 /* RemindersCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32A51DE4D8D3470693F2ADC1 /* RemindersCard.swift */; };
+		354E399757B34C2FAA770B61 /* NotesCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D2833F3CD04655A829DA37 /* NotesCard.swift */; };
+		7831F28F4EFE4034B4571999 /* NotesReader.m in Sources */ = {isa = PBXBuildFile; fileRef = A074E757140147F3BDD96F03 /* NotesReader.m */; };
 		D5727D1B454A3AAE3CD303E5 /* MenuBarFilter.m in Sources */ = {isa = PBXBuildFile; fileRef = EF8BA0245DFA44DB7222AB3C /* MenuBarFilter.m */; };
 		E9AF49391E34FAB37D977E46 /* UsageMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9BB1DC437742E385ED282E /* UsageMonitor.swift */; };
 		F7793BA724F8CA3B12CF713E /* ShelfModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E432714430E22EB31DEE5311 /* ShelfModel.swift */; };
@@ -36,6 +38,9 @@
 		1406B306CC8D8D5FD3746E01 /* PlayerReader.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = PlayerReader.h; sourceTree = "<group>"; };
 		39BAF19225C1CB83DB6E09A8 /* CalendarCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalendarCard.swift; sourceTree = "<group>"; };
 		32A51DE4D8D3470693F2ADC1 /* RemindersCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RemindersCard.swift; sourceTree = "<group>"; };
+		60D2833F3CD04655A829DA37 /* NotesCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotesCard.swift; sourceTree = "<group>"; };
+		A074E757140147F3BDD96F03 /* NotesReader.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = NotesReader.m; sourceTree = "<group>"; };
+		A9DFA0AF3AE64A049ABC234D /* NotesReader.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = NotesReader.h; sourceTree = "<group>"; };
 		5346B971B5E88135DCAC7652 /* PlayerReader.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = PlayerReader.m; sourceTree = "<group>"; };
 		5BD1193BA4A52B275EF1E30C /* TrayStrip.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrayStrip.swift; sourceTree = "<group>"; };
 		6922F891D2251F18464686CA /* MusicCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MusicCard.swift; sourceTree = "<group>"; };
@@ -95,6 +100,9 @@
 				6922F891D2251F18464686CA /* MusicCard.swift */,
 				39BAF19225C1CB83DB6E09A8 /* CalendarCard.swift */,
 				32A51DE4D8D3470693F2ADC1 /* RemindersCard.swift */,
+				60D2833F3CD04655A829DA37 /* NotesCard.swift */,
+				A074E757140147F3BDD96F03 /* NotesReader.m */,
+				A9DFA0AF3AE64A049ABC234D /* NotesReader.h */,
 				5346B971B5E88135DCAC7652 /* PlayerReader.m */,
 				1406B306CC8D8D5FD3746E01 /* PlayerReader.h */,
 				FD3A11FCB9ABA5AB2BC95A24 /* WingPreferences.swift */,
@@ -239,6 +247,8 @@
 				70D5DAC5ABC965CDB1313E2A /* MusicCard.swift in Sources */,
 				D29FAB8AE0C134232F2FDAEA /* CalendarCard.swift in Sources */,
 				98A01DF8C591012FB3218483 /* RemindersCard.swift in Sources */,
+				354E399757B34C2FAA770B61 /* NotesCard.swift in Sources */,
+				7831F28F4EFE4034B4571999 /* NotesReader.m in Sources */,
 				A2DA5F4E01CF8E7E11986756 /* PlayerReader.m in Sources */,
 				38B70C693AE317779BA40A26 /* WingPreferences.swift in Sources */,
 				E9AF49391E34FAB37D977E46 /* UsageMonitor.swift in Sources */,
@@ -266,7 +276,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 chopnchop.dev. MIT License.";
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Show the current track, artwork and playback time in the notch and control playback.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Show the current track, artwork and playback time in the notch and control playback, and read and add notes in Notes.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Read your calendar to show events for the selected day in the notch.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "View, add and complete reminders in the notch.";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -298,7 +308,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 chopnchop.dev. MIT License.";
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Show the current track, artwork and playback time in the notch and control playback.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Show the current track, artwork and playback time in the notch and control playback, and read and add notes in Notes.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Read your calendar to show events for the selected day in the notch.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "View, add and complete reminders in the notch.";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
