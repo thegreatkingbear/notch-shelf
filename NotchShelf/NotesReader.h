@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// is plain lines (div, br and a heading), so saving it as text loses nothing.
 + (nullable NSDictionary *)noteWithID:(NSString *)identifier;
 /// Replaces a plain note's body with `text`, one line per paragraph. Refuses when the note's
-/// current plain text differs from `expected` (changed elsewhere) or it is no longer plain.
+/// current plain text differs from `expected` (changed elsewhere), it is no longer plain, or it was deleted.
 /// Returns the saved plain text.
 + (nullable NSString *)updateNote:(NSString *)identifier expected:(NSString *)expected text:(NSString *)text
                          conflict:(BOOL *)conflict error:(NSString *_Nullable *_Nullable)message;
