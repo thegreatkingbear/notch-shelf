@@ -16,15 +16,43 @@ static NSString *const NotesBundle = @"com.apple.Notes";
 - (void)show;
 @end
 @protocol NotesFolder
+- (NSString *)id;
+- (NSString *)name;
+- (SBObject *)container;
 - (SBElementArray *)notes;
 @end
 @protocol NotesAccount
+- (NSString *)id;
+- (SBElementArray *)folders;
 - (SBObject<NotesFolder> *)defaultFolder;
 @end
 @protocol NotesApplication
 - (SBElementArray *)notes;
+- (SBElementArray *)accounts;
 - (SBObject<NotesAccount> *)defaultAccount;
 @end
+
+// The app's note list includes each account's Recently Deleted folder, which scripting
+// doesn't mark. Recognise it by Notes' own localized names for that folder.
+static NSSet<NSString *> *trashFolderNames(void) {
+    static NSSet *names;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        NSMutableSet *set = [NSMutableSet setWithArray:@[@"Recently Deleted", @"최근 삭제된 항목", @"最近削除した項目",
+            @"最近删除", @"最近刪除", @"Suppr. récentes", @"Zuletzt gelöscht", @"Недавно удаленные"]];
+        NSData *data = [NSData dataWithContentsOfFile:@"/System/Library/PrivateFrameworks/NotesShared.framework/Resources/Localizable.loctable"];
+        NSDictionary *table = data ? [NSPropertyListSerialization propertyListWithData:data options:0 format:nil error:nil] : nil;
+        if ([table isKindOfClass:NSDictionary.class]) {
+            for (NSDictionary *strings in table.allValues) {
+                if (![strings isKindOfClass:NSDictionary.class]) continue;
+                id name = strings[@"Recently Deleted"];
+                if ([name isKindOfClass:NSString.class]) [set addObject:name];
+            }
+        }
+        names = set;
+    });
+    return names;
+}
 
 static NSString *escapeHTML(NSString *text) {
     NSMutableString *html = [NSMutableString string];
@@ -76,6 +104,26 @@ static NSString *normalized(NSString *text) {
 }
 
 @implementation NotesReader
+/// Ids of notes waiting in a Recently Deleted folder, which belongs directly to an account.
++ (NSSet<NSString *> *)deletedNoteIDs:(SBApplication<NotesApplication> *)app {
+    NSMutableSet *ids = [NSMutableSet set];
+    NSSet *trash = trashFolderNames();
+    for (SBObject<NotesAccount> *account in app.accounts) {
+        NSString *accountID = account.id;
+        SBElementArray *folders = account.folders;
+        NSArray *names = [folders arrayByApplyingSelector:@selector(name)];
+        for (NSUInteger i = 0; i < names.count && i < folders.count; i++) {
+            if (![trash containsObject:names[i]]) continue;
+            SBObject<NotesFolder> *folder = folders[i];
+            id parent = [folder.container get];
+            if (![parent respondsToSelector:@selector(id)] || ![[parent id] isEqual:accountID]) continue;
+            NSArray *noteIDs = [folder.notes arrayByApplyingSelector:@selector(id)];
+            if (noteIDs) [ids addObjectsFromArray:noteIDs];
+        }
+    }
+    return ids;
+}
+
 + (BOOL)isRunning {
     return [NSRunningApplication runningApplicationsWithBundleIdentifier:NotesBundle].count > 0;
 }
@@ -102,9 +150,10 @@ static NSString *normalized(NSString *text) {
         NSArray *dates = [notes arrayByApplyingSelector:@selector(modificationDate)];
         NSArray *locks = [notes arrayByApplyingSelector:@selector(passwordProtected)];
         if (!ids || ids.count != names.count || ids.count != dates.count) return nil;
+        NSSet *deleted = [self deletedNoteIDs:[self app]];
         NSMutableArray<NSDictionary *> *rows = [NSMutableArray arrayWithCapacity:ids.count];
         for (NSUInteger i = 0; i < ids.count; i++) {
-            if (![ids[i] isKindOfClass:NSString.class]) continue;
+            if (![ids[i] isKindOfClass:NSString.class] || [deleted containsObject:ids[i]]) continue;
             NSDate *date = [dates[i] isKindOfClass:NSDate.class] ? dates[i] : NSDate.distantPast;
             NSString *name = [names[i] isKindOfClass:NSString.class] ? names[i] : @"";
             BOOL locked = i < locks.count && [locks[i] respondsToSelector:@selector(boolValue)] && [locks[i] boolValue];
@@ -158,7 +207,7 @@ static NSString *normalized(NSString *text) {
         SBObject<NotesNote> *note = [app.notes objectWithID:identifier];
         NSString *body = note.body;
         if (!body) return nil;
-        if (note.passwordProtected || !isPlainBody(body) || ![normalized(note.plaintext ?: @"") isEqual:normalized(expected)]) {
+        if (note.passwordProtected || !isPlainBody(body) || [[self deletedNoteIDs:app] containsObject:identifier] || ![normalized(note.plaintext ?: @"") isEqual:normalized(expected)]) {
             if (conflict) *conflict = YES;
             return nil;
         }
