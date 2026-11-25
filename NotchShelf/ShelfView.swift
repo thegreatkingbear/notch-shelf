@@ -52,22 +52,18 @@ struct ShelfView: View {
                 Color.black
                 VStack(spacing: 2) {
                     HStack(spacing: 5) {
-                        if model.managing {
-                            Text("Arrange Apps").font(.headline)
-                            Spacer()
-                            Button("Done") { model.managing = false }.controlSize(.small)
-                        } else if model.trusted {
+                        if model.trusted {
                             TrayStrip(items: model.visibleItems) { model.onChoose?($0) }
                         } else { Spacer() }
-                        settings
+                        Button(action: openSettings) {
+                            Image(systemName: "gearshape.fill").font(.system(size: 13, weight: .medium))
+                                .frame(width: 26, height: 26).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Settings…")
+                        .help("Settings…")
                     }.padding(.leading, 9).padding(.trailing, 11).frame(height: 30)
-                    if model.managing && model.trusted {
-                        ScrollView {
-                            LazyVStack(spacing: 3) {
-                                ForEach(model.apps) { app in placementRow(app) }
-                            }
-                        }.padding(.horizontal, 12)
-                    } else if !model.trusted {
+                    if !model.trusted {
                         emptyState("hand.raised", String(localized: "Allow Menu Bar Access"),
                                    String(localized: "In Settings, enable NotchShelf.app under “\(ShelfModel.permissionPaneName)”.")) {
                             Button("Open Permission Settings", action: openPermissionSettings)
@@ -88,51 +84,6 @@ struct ShelfView: View {
             .mask(ShelfOutline(progress: model.expanded ? 1 : 0, collapsedWidth: notchWidth, openHeight: openHeight))
         }
         .preferredColorScheme(.dark)
-    }
-
-    private func placementRow(_ app: PlacementApp) -> some View {
-        let inNotch = model.destinations[app.id] != nil
-        return Button {
-            model.move(app)
-        } label: {
-            HStack(spacing: 9) {
-                if let icon = app.icon {
-                    Image(nsImage: icon).resizable().scaledToFit().frame(width: 21, height: 21)
-                } else {
-                    Image(systemName: "app").frame(width: 21)
-                }
-                Text(app.name).lineLimit(1)
-                Spacer()
-                Label(inNotch ? String(localized: "Notch") : String(localized: "Menu Bar"), systemImage: inNotch ? "tray.fill" : "menubar.rectangle")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(inNotch ? Color.mint : Color.secondary)
-            }
-            .padding(.horizontal, 9).frame(minHeight: 32)
-            .background(RoundedRectangle(cornerRadius: 7).fill(.white.opacity(0.08)))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(app.name + ", " + (inNotch ? String(localized: "Move to Menu Bar") : String(localized: "Move to Notch")))
-        .help(inNotch ? String(localized: "Move to Menu Bar") : String(localized: "Move to Notch"))
-    }
-
-    private var settings: some View {
-        Menu {
-            if model.trusted && model.supportsPlacement {
-                Button(model.managing ? String(localized: "Finish Arranging Apps") : String(localized: "Arrange Apps")) {
-                    model.managing.toggle()
-                    if model.managing { model.refresh(force: true) }
-                }
-            }
-            Button("Refresh") { model.message = nil; model.refresh(force: true) }
-                .disabled(!model.trusted || model.loading)
-            Button("Settings…", action: openSettings)
-            Divider()
-            Button("Quit Notch Shelf") { NSApp.terminate(nil) }
-        } label: {
-            Image(systemName: "gearshape.fill").font(.system(size: 13, weight: .medium))
-                .frame(width: 26, height: 26).contentShape(Rectangle())
-        }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-         .accessibilityLabel("Settings Menu")
     }
 
     private func emptyState<Content: View>(_ symbol: String, _ title: String, _ detail: String,

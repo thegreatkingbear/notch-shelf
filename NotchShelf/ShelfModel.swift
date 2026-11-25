@@ -13,7 +13,6 @@ final class ShelfModel: ObservableObject {
     @Published private(set) var loading = false
     @Published var message: String?
     @Published var expanded = false
-    @Published var managing = false
     @Published private(set) var destinations = UserDefaults.standard.dictionary(forKey: "notchApps") as? [String: String] ?? [:]
     @Published private(set) var hidden = Set<String>()
     @Published private(set) var layoutError: String?
@@ -139,7 +138,7 @@ final class ShelfModel: ObservableObject {
         guard trusted != current else { return }
         trusted = current
         updateLayout()
-        if current { refresh(force: true) } else { items = []; managing = false }
+        if current { refresh(force: true) } else { items = [] }
     }
 
     static var permissionPaneName: String {

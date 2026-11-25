@@ -158,6 +158,7 @@ final class NotchWings {
     private var lastTrusted = false
     private var expanded = false
     private var clearBand: CGRect
+    private var menuBarHidden = false
 
     init(playback: PlaybackMonitor, preferences: WingPreferences, usage: UsageMonitor, notch: CGRect, shelfFrame: CGRect, screenLeft: CGFloat, primaryTop: CGFloat,
          alignShelf: @escaping (CGRect) -> Void, activate: @escaping (WingWidget) -> Void) {
@@ -229,11 +230,14 @@ final class NotchWings {
         // Both halves end at the same pixel, including in screenshots where
         // the physical camera cutout itself is transparent.
         let middle = notch.midX.rounded()
+        // A hidden menu bar leaves the whole shelf width free for its background.
+        let band = menuBarHidden ? expandedBand : clearBand
         for (panel, isLeft) in [(left, true), (right, false)] {
-            let space = isLeft ? notch.minX - clearBand.minX : clearBand.maxX - notch.maxX
-            let hasControl = space >= Self.controlWidth && !preferences.layout.items(isLeft ? .left : .right).isEmpty
+            let space = isLeft ? notch.minX - band.minX : band.maxX - notch.maxX
+            let items = preferences.layout.items(isLeft ? .left : .right)
+            let hasControl = !menuBarHidden && space >= Self.controlWidth && !items.isEmpty
             let selection = isLeft ? leftSelection : rightSelection
-            selection.configure(hasControl ? preferences.layout.items(isLeft ? .left : .right) : [])
+            selection.configure(hasControl ? items : [])
             guard expanded || hasControl else {
                 if panel.isVisible { panel.orderOut(nil) }
                 continue
@@ -245,7 +249,14 @@ final class NotchWings {
             if let view = panel.contentView as? NSHostingView<WingFace> {
                 view.rootView = WingFace(playback: playback, selection: selection, usage: usage, isLeft: isLeft, expanded: expanded, activate: activate)
             }
-            if animated && panel.isVisible {
+            panel.ignoresMouseEvents = !hasControl
+            if animated {
+                if !panel.isVisible {
+                    let half = CGRect(x: isLeft ? notch.minX : middle, y: notch.minY,
+                                      width: isLeft ? middle - notch.minX : notch.maxX - middle, height: notch.height)
+                    panel.setFrame(half, display: false)
+                    panel.orderFront(nil)
+                }
                 NSAnimationContext.runAnimationGroup { context in
                     // Widen the shoulders early in the drop, within the free menu-bar space.
                     context.duration = expanded ? 0.24 : 0.26
@@ -313,6 +324,7 @@ final class NotchWings {
             invalidateLayout()
             lastTrusted = trusted
             if !trusted {
+                menuBarHidden = false
                 clearBand = notch
                 layout()
             }
@@ -339,7 +351,8 @@ final class NotchWings {
                     return
                 case .hidden:
                     self.alignShelf(self.expandedBand)
-                    if self.clearBand != self.notch {
+                    if !self.menuBarHidden {
+                        self.menuBarHidden = true
                         self.clearBand = self.notch
                         self.layout()
                     }
@@ -359,7 +372,8 @@ final class NotchWings {
                 let x = min(max(self.expandedBand.minX, minX), maxX - width)
                 let available = CGRect(x: x, y: self.notch.minY, width: width, height: self.notch.height)
                 self.alignShelf(available)
-                if available != self.clearBand {
+                if self.menuBarHidden || available != self.clearBand {
+                    self.menuBarHidden = false
                     self.clearBand = available
                     self.layout()
                 }

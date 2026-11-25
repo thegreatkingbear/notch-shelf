@@ -99,7 +99,7 @@ final class LoginItem: ObservableObject {
     }
 }
 
-struct WingSettings: View {
+struct ShelfSettings: View {
     @ObservedObject var preferences: WingPreferences
     @ObservedObject var model: ShelfModel
     @ObservedObject var usage: UsageMonitor
@@ -116,41 +116,121 @@ struct WingSettings: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Collapsed Notch").font(.title2.bold())
-                Spacer()
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Collapsed Notch").font(.title3.bold())
+                    Text("Drag items from the center to either side. Items on the same side appear in order, switching every \(WingPreferences.rotationSeconds) seconds.")
+                        .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    HStack(alignment: .top, spacing: 8) {
+                        ForEach(WingColumn.allCases, id: \.self) { side in column(side) }
+                    }
+                }
+                Divider()
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Arrange Apps").font(.title3.bold())
+                        Spacer()
+                        Button("Refresh") {
+                            model.message = nil
+                            model.refresh(force: true)
+                        }.controlSize(.small).disabled(!model.trusted || model.loading)
+                    }
+                    placement
+                }.frame(width: 254)
+            }
+            Divider()
+            VStack(alignment: .leading, spacing: 7) {
+                Text("Usage Limits").font(.headline)
+                HStack { usageButtons }
+            }
+            VStack(alignment: .leading, spacing: 7) {
+                Text("Permissions").font(.headline)
+                ViewThatFits(in: .horizontal) {
+                    HStack {
+                        permissionsButton
+                        cardPermissions
+                    }
+                    VStack(alignment: .leading) {
+                        permissionsButton
+                        HStack { cardPermissions }
+                    }
+                }
+            }
+            Divider()
+            HStack {
                 Toggle("Open at Login", isOn: Binding(get: { login.enabled }, set: login.set))
-                    .toggleStyle(.switch).controlSize(.small)
+                    .toggleStyle(.switch)
+                Spacer()
+                Button("Quit Notch Shelf") { NSApp.terminate(nil) }
             }
             if login.status == .requiresApproval {
                 HStack {
                     Text("Allow Notch Shelf in System Settings → General → Login Items.")
                         .font(.callout).foregroundStyle(.secondary)
-                    Button("Open Login Items…") { SMAppService.openSystemSettingsLoginItems() }.controlSize(.small)
+                    Button("Open Login Items…") { SMAppService.openSystemSettingsLoginItems() }
                 }
             }
-            Text("Drag items from the center to either side. Items on the same side appear in order, switching every \(WingPreferences.rotationSeconds) seconds.")
-                .font(.callout).foregroundStyle(.secondary)
-            HStack(alignment: .top, spacing: 12) {
-                ForEach(WingColumn.allCases, id: \.self) { side in column(side) }
-            }
-            Divider()
-            ViewThatFits(in: .horizontal) {
-                HStack {
-                    usageButtons
-                    Spacer()
-                    permissionsButton
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack { usageButtons }
-                    permissionsButton
-                }
-            }.controlSize(.small)
         }
         .padding(20)
-        .frame(minWidth: 650, minHeight: 360)
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in login.reload() }
+    }
+
+    @ViewBuilder private var placement: some View {
+        if let message = model.layoutError ?? model.message {
+            Text(message).font(.callout).foregroundStyle(.secondary)
+        }
+        if !model.trusted {
+            Text("Allow Menu Bar Access").foregroundStyle(.secondary)
+        } else if !model.supportsPlacement {
+            Text("App placement is unavailable on this Mac.").foregroundStyle(.secondary)
+        } else if model.apps.isEmpty {
+            if model.loading { ProgressView().controlSize(.small) }
+            else { Text("No menu bar apps found.").foregroundStyle(.secondary) }
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 4) {
+                    ForEach(model.apps) { app in placementRow(app) }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var cardPermissions: some View {
+        Button("Open Calendar Settings") { openPrivacyPane("Calendars") }
+        Button("Open Reminders Settings") { openPrivacyPane("Reminders") }
+        Button("Open Automation Settings") { openPrivacyPane("Automation") }
+    }
+
+    private func openPrivacyPane(_ pane: String) {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_\(pane)") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func placementRow(_ app: PlacementApp) -> some View {
+        let inNotch = model.destinations[app.id] != nil
+        return Button {
+            model.move(app)
+        } label: {
+            HStack(spacing: 9) {
+                if let icon = app.icon {
+                    Image(nsImage: icon).resizable().scaledToFit().frame(width: 21, height: 21)
+                } else {
+                    Image(systemName: "app").frame(width: 21)
+                }
+                Text(app.name).lineLimit(1)
+                Spacer()
+                Label(inNotch ? String(localized: "Notch") : String(localized: "Menu Bar"), systemImage: inNotch ? "tray.fill" : "menubar.rectangle")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(inNotch ? Color.accentColor : Color.secondary)
+            }
+            .padding(.horizontal, 9).frame(minHeight: 32)
+            .background(RoundedRectangle(cornerRadius: 7).fill(.quaternary))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(app.name + ", " + (inNotch ? String(localized: "Move to Menu Bar") : String(localized: "Move to Notch")))
+        .help(inNotch ? String(localized: "Move to Menu Bar") : String(localized: "Move to Notch"))
     }
 
     @ViewBuilder private var usageButtons: some View {

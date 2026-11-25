@@ -24,7 +24,7 @@ The collapsed notch can show a small widget on each side:
 - **Mac thermal state**.
 - **Any menu bar app** you moved to the notch; click it to open its menu.
 
-Arrange them in **gear menu → Settings…** by dragging items from **Widgets and Apps** in the middle to the left or right column. Drag within a column to reorder, or back to the middle to remove. With several items on one side, they take turns every 6 seconds, pausing while the pointer is over them. If menu bar items need the space beside the notch, the widget on that side steps aside.
+Click the **gear** and look under **Collapsed Notch**. Drag items from **Widgets and Apps** in the middle to the left or right column. Drag within a column to reorder, or back to the middle to remove. With several items on one side, they take turns every 6 seconds, pausing while the pointer is over them. If menu bar items need the space beside the notch, the widget on that side steps aside.
 
 ### Usage limits
 
@@ -38,14 +38,14 @@ The 5-hour limit is shown first; accounts with only a weekly limit show that. Ch
 ## Moving apps into the notch
 
 1. Open Notch Shelf and point at the notch. When asked, allow **NotchShelf** in **System Settings → Privacy & Security → Device Control and Data Access**.
-2. Choose **Arrange Apps** from the gear menu on the right. Each row shows where the app is now; click a row to switch it between **Menu Bar** and **Notch**.
-3. Click **Done**. Apps sent to the notch disappear from the menu bar and appear in the shelf. Click an icon to open that app's real menu. To move an app back, click its row in **Arrange Apps** again.
+2. Click the gear and look under **Arrange Apps**. Each row shows where the app is now; click a row to switch it between **Menu Bar** and **Notch**.
+3. Changes apply immediately. Apps sent to the notch disappear from the menu bar and appear in the shelf. Click an icon to open that app's real menu. To move an app back, click its row in **Arrange Apps** again.
 
 At first, every app stays in the menu bar. Apps with several icons move together. System items such as the clock and Control Center always stay in the menu bar. Your arrangement is kept across restarts, and quitting Notch Shelf restores the full menu bar.
 
 ## The open shelf
 
-The row under the notch shows the menu bar icons of the apps you moved. If they don't fit, swipe sideways with two fingers or rest the pointer at either end to scroll. The gear menu offers Arrange Apps, Refresh, Settings and Quit. Apps without a usable menu bar image are shown by their first letter.
+The row under the notch shows the menu bar icons of the apps you moved. If they don't fit, swipe sideways with two fingers or rest the pointer at either end to scroll. The gear opens one window for widget and app placement, usage limits, permissions, login and quitting the app. Apps without a usable menu bar image are shown by their first letter.
 
 **Settings → Open at Login** starts Notch Shelf when you log in.
 

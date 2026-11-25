@@ -219,7 +219,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let overNotch = anchor.trigger.insetBy(dx: -1, dy: -1).contains(point)
         let time = now
         model.accommodateClock(at: point, time: time)
-        if (wings != nil || model.expanded || !model.destinations.isEmpty) && time - lastPermissionCheck > 1.0 {
+        if (wings != nil || model.expanded || settingsWindow?.isVisible == true || !model.destinations.isEmpty) && time - lastPermissionCheck > 1.0 {
             lastPermissionCheck = time
             model.syncPermission()
         }
@@ -271,7 +271,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         transition += 1
         let token = transition
         wings?.setExpanded(false, animated: !immediately)
-        model.managing = false
         closeAfter = nil
         enteredAt = nil
         panel?.ignoresMouseEvents = true
@@ -308,14 +307,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func openSettings() {
         if settingsWindow == nil {
-            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 690, height: 405),
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 940, height: 550),
                                   styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
             window.title = String(localized: "Notch Shelf Settings")
             window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: WingSettings(preferences: preferences, model: model, usage: usage) { [weak self] in
+            let settingsView = NSHostingView(rootView: ShelfSettings(preferences: preferences, model: model, usage: usage) { [weak self] in
                 self?.openPermissionSettings()
             })
-            window.contentMinSize = NSSize(width: 650, height: 360)
+            settingsView.sizingOptions = []
+            window.contentView = settingsView
+            window.contentMinSize = NSSize(width: 800, height: 460)
             window.center()
             settingsClose = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self] _ in
                 self?.usage.settings(false)
